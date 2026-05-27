@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import tkinter as tk
 import random
 import numpy as np
@@ -9,6 +10,7 @@ from PIL import Image, ImageTk, ImageOps
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 IMAGE_PATH = os.path.join(BASE_DIR, "cat.png")
 FRAMES_DIR = os.path.join(BASE_DIR, "frames")
+POS_FILE   = os.path.join(BASE_DIR, "..", "shared_pos.json")
 
 WIN     = 150
 TARGET  = 110
@@ -61,7 +63,19 @@ def extract_frames():
     def save_frame(comp, fname):
         crop = np.array(img.crop((comp['x1'], comp['y1'], comp['x2'], comp['y2'])))
         d    = np.abs(crop[:, :, :3].astype(int) - bg.astype(int))
-        crop[np.all(d < 15, axis=-1)] = [255, 0, 255, 255]
+        bg_similar = np.all(d < 15, axis=-1)
+
+        # 테두리에 연결된 배경 픽셀만 마젠타로 교체 (flood fill)
+        bg_labeled, _ = ndimage.label(bg_similar)
+        border_ids = set()
+        for edge in [bg_labeled[0, :], bg_labeled[-1, :],
+                     bg_labeled[:, 0], bg_labeled[:, -1]]:
+            border_ids.update(edge.tolist())
+        border_ids.discard(0)
+        actual_bg = np.isin(bg_labeled, list(border_ids))
+
+        crop[actual_bg] = [255, 0, 255, 255]
+        crop[~actual_bg, 3] = 255  # 고양이 픽셀은 완전 불투명
         Image.fromarray(crop).save(os.path.join(FRAMES_DIR, fname))
 
     for name, row in zip(['walk', 'idle', 'jump'], groups):
@@ -76,7 +90,7 @@ def load_state(state, count):
         if not os.path.exists(path):
             continue
         img = Image.open(path).convert('RGBA')
-        data = [(0, 0, 0, 0) if (r > 240 and g < 20 and b > 240) else (r, g, b, a)
+        data = [(0, 0, 0, 0) if (r > 240 and g < 20 and b > 240) or a < 128 else (r, g, b, 255)
                 for r, g, b, a in img.getdata()]
         img.putdata(data)
         w, h  = img.size
@@ -130,12 +144,19 @@ class DesktopCat:
         self.label.bind('<ButtonPress-1>',   self._press)
         self.label.bind('<B1-Motion>',       self._drag)
         self.label.bind('<ButtonRelease-1>', self._release)
-        self.label.bind('<Button-3>',        lambda e: self.root.destroy())
+        self.label.bind('<Button-3>',        lambda e: self._quit())
 
         self.root.geometry(f'{WIN}x{WIN}+{self.x}+{self.y}')
         self.update_animation()
         self.change_state()
         self.root.mainloop()
+
+    def _quit(self):
+        try:
+            os.remove(POS_FILE)
+        except Exception:
+            pass
+        self.root.destroy()
 
     # ── 드래그 / 클릭 ──────────────────────────────────────
     def _press(self, e):
@@ -182,6 +203,13 @@ class DesktopCat:
             elif self.x < 5:
                 self.direction = 'right'
             self.root.geometry(f'{WIN}x{WIN}+{self.x}+{self.y}')
+
+        # 위치 공유 (dog이 읽음)
+        try:
+            with open(POS_FILE, 'w') as f:
+                json.dump({'x': self.x}, f)
+        except Exception:
+            pass
 
         # 프레임 갱신
         key   = f'{self.state}_{self.direction}'
