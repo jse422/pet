@@ -2,7 +2,7 @@ import tkinter as tk
 from PIL import Image, ImageOps, ImageTk
 import random
 
-SPRITE_PATH = r'C:\Users\jsepr\.claude\image-cache\0200337c-9000-4fa1-96ca-5ae61bd2775c\1.png'
+SPRITE_PATH = r'C:\Users\jsepr\OneDrive\Desktop\강아지\dog\ChatGPT Image 2026년 5월 27일 오후 11_51_22.png'
 
 BG_RGB = (1, 1, 1)
 BG_HEX = '#010101'
