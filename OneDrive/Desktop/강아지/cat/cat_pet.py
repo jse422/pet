@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import tkinter as tk
 import random
 import numpy as np
@@ -10,7 +9,6 @@ from PIL import Image, ImageTk, ImageOps
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 IMAGE_PATH = os.path.join(BASE_DIR, "cat.png")
 FRAMES_DIR = os.path.join(BASE_DIR, "frames")
-POS_FILE   = os.path.join(BASE_DIR, "..", "shared_pos.json")
 
 WIN     = 150
 TARGET  = 110
@@ -144,19 +142,12 @@ class DesktopCat:
         self.label.bind('<ButtonPress-1>',   self._press)
         self.label.bind('<B1-Motion>',       self._drag)
         self.label.bind('<ButtonRelease-1>', self._release)
-        self.label.bind('<Button-3>',        lambda e: self._quit())
+        self.label.bind('<Button-3>',        lambda e: self.root.destroy())
 
         self.root.geometry(f'{WIN}x{WIN}+{self.x}+{self.y}')
         self.update_animation()
         self.change_state()
         self.root.mainloop()
-
-    def _quit(self):
-        try:
-            os.remove(POS_FILE)
-        except Exception:
-            pass
-        self.root.destroy()
 
     # ── 드래그 / 클릭 ──────────────────────────────────────
     def _press(self, e):
@@ -204,12 +195,6 @@ class DesktopCat:
                 self.direction = 'right'
             self.root.geometry(f'{WIN}x{WIN}+{self.x}+{self.y}')
 
-        # 위치 공유 (dog이 읽음)
-        try:
-            with open(POS_FILE, 'w') as f:
-                json.dump({'x': self.x}, f)
-        except Exception:
-            pass
 
         # 프레임 갱신
         key   = f'{self.state}_{self.direction}'

@@ -1,18 +1,14 @@
 import tkinter as tk
 from PIL import Image, ImageOps, ImageTk
 import random
-import json
-import os
 
 SPRITE_PATH = r'C:\Users\jsepr\OneDrive\Desktop\강아지\dog\ChatGPT Image 2026년 5월 27일 오후 11_51_22.png'
-POS_FILE    = os.path.join(os.path.dirname(__file__), '..', 'shared_pos.json')
 
 BG_RGB = (1, 1, 1)
 BG_HEX = '#010101'
-WIN          = 130
-SPEED        = 2
-TICK         = 80       # ms
-FOLLOW_DIST  = 40       # 고양이와 이 거리 이내면 멈춤
+WIN   = 130
+SPEED = 2
+TICK  = 80       # ms
 
 # 스프라이트 좌표 (분석 결과)
 WALK_COORDS = [
@@ -105,13 +101,6 @@ class DogPet:
         self.tick()
         self.root.mainloop()
 
-    def _read_cat_pos(self):
-        try:
-            with open(POS_FILE) as f:
-                return json.load(f).get('x')
-        except Exception:
-            return None
-
     # ── 드래그 ─────────────────────────────────────────
     def _press(self, e):
         self._dragging = True
@@ -163,24 +152,15 @@ class DogPet:
 
         # 이동
         if not self._dragging:
-            cat_x = self._read_cat_pos()
-            if cat_x is not None:
-                dist = cat_x - self.x
-                if abs(dist) > FOLLOW_DIST:
-                    self.vx = SPEED if dist > 0 else -SPEED
-                    self.facing = 'r' if dist > 0 else 'l'
-                else:
-                    self.vx = 0
-            else:
-                if self.x >= self.sw - WIN - 5:
-                    self.vx = -SPEED
-                    self.facing = 'l'
-                    self.fi = 0
-                elif self.x <= 5:
-                    self.vx = SPEED
-                    self.facing = 'r'
-                    self.fi = 0
             self.x += self.vx
+            if self.x >= self.sw - WIN - 5:
+                self.vx = -SPEED
+                self.facing = 'l'
+                self.fi = 0
+            elif self.x <= 5:
+                self.vx = SPEED
+                self.facing = 'r'
+                self.fi = 0
             self.root.geometry(f'{WIN}x{WIN}+{self.x}+{self.y}')
 
         # 프레임 속도 (상태별)
