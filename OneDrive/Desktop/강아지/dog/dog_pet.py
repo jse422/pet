@@ -31,13 +31,8 @@ TARGET = 100  # 목표 스프라이트 크기
 
 
 def crop_sprite(sheet, x1, y1, x2, y2):
-    """잘라내기 + 검정 배경 제거 + 리사이즈"""
+    """잘라내기 + 리사이즈 (PNG alpha 채널 그대로 사용)"""
     frame = sheet.crop((x1, y1, x2, y2)).convert('RGBA')
-    data = [
-        (0, 0, 0, 0) if (r < 20 and g < 20 and b < 20) else (r, g, b, 255)
-        for r, g, b, a in frame.getdata()
-    ]
-    frame.putdata(data)
     w, h = frame.size
     scale = TARGET / max(w, h)
     return frame.resize((max(1, int(w * scale)), max(1, int(h * scale))), Image.NEAREST)
